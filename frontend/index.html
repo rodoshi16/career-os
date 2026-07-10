@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="/static/manifest.json">
+<title>InternshipRadar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #16a34a; --green-dim: #166534;
+    --bg: #000; --surface: #111; --surface2: #1a1a1a;
+    --border: #222; --text: #fff; --muted: #888; --red: #ef4444;
+    --yellow: #eab308; --blue: #3b82f6;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; }
+  #app { height: 100dvh; display: flex; flex-direction: column; }
+
+  /* Nav */
+  nav { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding-bottom: calc(8px + var(--safe-bottom)); flex-shrink: 0; }
+  nav button { flex: 1; background: none; border: none; color: var(--muted); font-size: 11px; padding: 10px 4px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color .15s; }
+  nav button svg { width: 22px; height: 22px; }
+  nav button.active { color: var(--green); }
+
+  /* Pages */
+  #pages { flex: 1; overflow: hidden; position: relative; }
+  .page { position: absolute; inset: 0; overflow-y: auto; display: none; padding-bottom: 16px; }
+  .page.active { display: block; }
+
+  /* Header */
+  .page-header { padding: 16px 16px 12px; padding-top: calc(16px + var(--safe-top)); background: var(--bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin: 8px 16px; padding: 14px; }
+  .card-company { font-weight: 700; font-size: 16px; }
+  .card-role { color: var(--green); font-size: 14px; margin: 2px 0; }
+  .card-meta { color: var(--muted); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .tag-github  { background: #7c3aed22; color: #a78bfa; }
+  .tag-greenhouse { background: #16a34a22; color: #4ade80; }
+  .tag-lever   { background: #0369a122; color: #38bdf8; }
+  .tag-linkedin { background: #1d4ed822; color: #60a5fa; }
+  .tag-applied  { background: #1f293722; color: var(--muted); }
+  .tag-oa       { background: #92400e22; color: var(--yellow); }
+  .tag-interview { background: #1e3a8a22; color: var(--blue); }
+  .tag-offer    { background: #14532d22; color: var(--green); }
+  .tag-rejected { background: #7f1d1d22; color: var(--red); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .15s; width: 100%; margin-top: 10px; }
+  .btn:active { opacity: .75; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-dim   { background: var(--surface2); color: var(--text); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-red   { background: #7f1d1d44; color: var(--red); }
+  .btn-sm { padding: 8px 14px; font-size: 13px; width: auto; margin-top: 0; border-radius: 10px; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: #000c; z-index: 100; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 16px; padding-bottom: calc(20px + var(--safe-bottom)); width: 100%; max-height: 90dvh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .modal-close { float: right; background: var(--surface2); border: none; color: var(--muted); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 16px; }
+
+  /* Resume picker */
+  .resume-option { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+  .resume-option.selected { border-color: var(--green); background: #16a34a11; }
+  .resume-option-name { font-weight: 600; font-size: 14px; }
+  .resume-option-meta { color: var(--muted); font-size: 12px; }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 16px; }
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 700; }
+  .stat-label { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* Tailored resume */
+  .resume-text { font-family: monospace; font-size: 12px; white-space: pre-wrap; background: var(--surface2); border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto; color: #ccc; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 32px 16px; text-align: center; cursor: pointer; margin: 0 16px; color: var(--muted); }
+  .upload-zone:hover { border-color: var(--green); }
+
+  /* Filter chips */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--muted); }
+  .chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .divider { height: 1px; background: var(--border); margin: 4px 16px; }
+  input[type=file] { display: none; }
+  input[type=text] { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; padding: 10px 12px; width: 100%; }
+  .flex { display: flex; align-items: center; }
+  .gap { gap: 8px; }
+  .mt { margin-top: 12px; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #fff4; border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="pages">
+
+    <!-- FEED PAGE -->
+    <div class="page active" id="page-feed">
+      <div class="page-header">
+        <h1>🎯 Radar</h1>
+        <p id="feed-subtitle">Loading jobs...</p>
+      </div>
+      <div class="chips" id="feed-chips">
+        <div class="chip active" data-filter="all">All</div>
+        <div class="chip" data-filter="greenhouse">Career Pages</div>
+        <div class="chip" data-filter="github">GitHub</div>
+        <div class="chip" data-filter="linkedin">LinkedIn</div>
+      </div>
+      <div id="feed-list"></div>
+    </div>
+
+    <!-- TRACKER PAGE -->
+    <div class="page" id="page-tracker">
+      <div class="page-header">
+        <h1>📋 Tracker</h1>
+        <p>Your applications</p>
+      </div>
+      <div class="stats-row" id="tracker-stats"></div>
+      <div class="chips" id="tracker-chips">
+        <div class="chip active" data-filter="all">All</div>
+        <div class="chip" data-filter="applied">Applied</div>
+        <div class="chip" data-filter="oa">OA</div>
+        <div class="chip" data-filter="interview">Interview</div>
+        <div class="chip" data-filter="offer">Offer</div>
+        <div class="chip" data-filter="rejected">Rejected</div>
+      </div>
+      <div id="tracker-list"></div>
+    </div>
+
+    <!-- RESUMES PAGE -->
+    <div class="page" id="page-resumes">
+      <div class="page-header">
+        <h1>📄 Resumes</h1>
+        <p>Up to 5 versions</p>
+      </div>
+      <div style="padding: 12px 16px;">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" id="resume-name-input" placeholder="Resume name (e.g. SWE General)" style="flex:1">
+        </div>
+        <label class="upload-zone" for="resume-file-input">
+          <div style="font-size:32px;margin-bottom:8px;">📎</div>
+          <div style="font-weight:600">Tap to upload resume</div>
+          <div style="font-size:12px;margin-top:4px">PDF or TXT</div>
+        </label>
+        <input type="file" id="resume-file-input" accept=".pdf,.txt">
+      </div>
+      <div id="resume-list"></div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h1>⚙️ Setup</h1>
+        <p>Push notifications & info</p>
+      </div>
+      <div style="padding: 12px 16px; display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-green" id="btn-push">Enable Push Notifications</button>
+        <div class="card" id="push-status"></div>
+        <div class="card" style="color:var(--muted);font-size:13px;line-height:1.6">
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px">How it works</div>
+          <div>📋 GitHub repos checked every 5 min</div>
+          <div>🏢 Company career pages every 5 min</div>
+          <div>💼 LinkedIn connections every 30 min</div>
+          <div style="margin-top:8px">Greenhouse &amp; Lever jobs → one-click apply</div>
+          <div>Workday / others → opens link manually</div>
+        </div>
+        <div class="card" style="font-size:13px;">
+          <div style="font-weight:700;margin-bottom:8px">Install to Home Screen</div>
+          <div style="color:var(--muted);line-height:1.6">
+            Safari → Share button → "Add to Home Screen"<br>
+            Works like a real app. Push notifications included.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <nav>
+    <button class="active" data-page="feed" onclick="switchPage('feed', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Feed
+    </button>
+    <button data-page="tracker" onclick="switchPage('tracker', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Tracker
+    </button>
+    <button data-page="resumes" onclick="switchPage('resumes', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Resumes
+    </button>
+    <button data-page="settings" onclick="switchPage('settings', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Setup
+    </button>
+  </nav>
+</div>
+
+<!-- Apply Modal -->
+<div class="modal-overlay" id="apply-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('apply-modal')">✕</button>
+    <div class="modal-title" id="apply-modal-title"></div>
+    <div class="modal-sub" id="apply-modal-sub"></div>
+    <div id="apply-resume-picker"></div>
+    <div id="apply-tailor-section"></div>
+    <button class="btn btn-green" id="apply-btn" onclick="submitApply()">
+      <span id="apply-btn-text">Apply Now</span>
+    </button>
+    <button class="btn btn-outline mt" onclick="window.open(currentJob?.url, '_blank')">Open Application Page</button>
+  </div>
+</div>
+
+<!-- Status Modal -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('status-modal')">✕</button>
+    <div class="modal-title" style="margin-bottom:12px">Update Status</div>
+    <div id="status-options"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+const API = "";  // Same origin
+let jobs = [], resumes = [], applications = [], currentJob = null, selectedResumeId = null;
+let feedFilter = "all", trackerFilter = "all";
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+function switchPage(page, btn) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-" + page).classList.add("active");
+  btn.classList.add("active");
+  if (page === "feed") loadFeed();
+  if (page === "tracker") loadTracker();
+  if (page === "resumes") loadResumes();
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, duration = 2500) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+// ── Feed ─────────────────────────────────────────────────────────────────────
+async function loadFeed() {
+  try {
+    jobs = await fetch(`${API}/api/jobs`).then(r => r.json());
+    renderFeed();
+    document.getElementById("feed-subtitle").textContent = `${jobs.length} postings`;
+  } catch(e) { console.error(e); }
+}
+
+function renderFeed() {
+  const filtered = feedFilter === "all" ? jobs : jobs.filter(j => j.source === feedFilter || j.ats === feedFilter);
+  const el = document.getElementById("feed-list");
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📡</div><div>Watchers are running.<br>Check back soon.</div></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(j => `
+    <div class="card" onclick="openApply(${JSON.stringify(j).replace(/"/g, '&quot;')})">
+      <div class="flex" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="card-company">${j.company}</div>
+          <div class="card-role">${j.role}</div>
+          <div class="card-meta">
+            <span>${j.location || ""}</span>
+            <span>${timeAgo(j.created_at)}</span>
+          </div>
+        </div>
+        <span class="tag tag-${j.ats || j.source}">${sourceLabel(j)}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+document.querySelectorAll("#feed-chips .chip").forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll("#feed-chips .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    feedFilter = chip.dataset.filter;
+    renderFeed();
+  };
+});
+
+// ── Apply Modal ──────────────────────────────────────────────────────────────
+function openApply(job) {
+  currentJob = job;
+  selectedResumeId = resumes[0]?.id || null;
+  document.getElementById("apply-modal-title").textContent = `${job.company}`;
+  document.getElementById("apply-modal-sub").textContent = job.role;
+
+  // Resume picker
+  const canAutoApply = job.ats === "greenhouse" || job.ats === "lever";
+  const picker = document.getElementById("apply-resume-picker");
+  if (resumes.length === 0) {
+    picker.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-bottom:12px">⚠️ Upload a resume first in the Resumes tab</div>`;
+  } else {
+    picker.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Choose resume</div>
+      ${resumes.map(r => `
+        <div class="resume-option ${r.id === selectedResumeId ? 'selected' : ''}" onclick="selectResume('${r.id}', this)">
+          <div>
+            <div class="resume-option-name">${r.name}</div>
+          </div>
+        </div>
+      `).join("")}
+      <button class="btn btn-dim btn-sm" style="margin-top:8px" onclick="tailorResume()">✨ Tailor for this role</button>
+    `;
+  }
+
+  const applyBtn = document.getElementById("apply-btn");
+  const applyBtnText = document.getElementById("apply-btn-text");
+  if (canAutoApply) {
+    applyBtnText.textContent = "One-Click Apply (Auto)";
+    applyBtn.style.display = "";
+  } else {
+    applyBtnText.textContent = "Log Application";
+    applyBtn.style.display = "";
+  }
+
+  document.getElementById("apply-tailor-section").innerHTML = "";
+  document.getElementById("apply-modal").classList.add("open");
+}
+
+function selectResume(id, el) {
+  selectedResumeId = id;
+  document.querySelectorAll(".resume-option").forEach(o => o.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+async function tailorResume() {
+  if (!selectedResumeId) { toast("Pick a resume first"); return; }
+  const btn = event.target;
+  btn.innerHTML = `<span class="spinner"></span> Tailoring...`;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/tailor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resume_id: selectedResumeId,
+        company: currentJob.company,
+        role: currentJob.role,
+        location: currentJob.location,
+        description: currentJob.description || "",
+      })
+    }).then(r => r.json());
+
+    document.getElementById("apply-tailor-section").innerHTML = `
+      <div style="margin-top:12px">
+        <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:6px">✅ Tailored Resume</div>
+        <div class="resume-text">${res.tailored}</div>
+        <button class="btn btn-outline" style="margin-top:8px;font-size:13px" onclick="copyTailored(this, ${JSON.stringify(res.tailored).replace(/"/g, '&quot;')})">Copy to Clipboard</button>
+      </div>
+    `;
+  } catch(e) {
+    toast("Tailoring failed — check API key");
+  }
+  btn.innerHTML = "✨ Tailor for this role";
+  btn.disabled = false;
+}
+
+function copyTailored(btn, text) {
+  navigator.clipboard.writeText(text);
+  btn.textContent = "✅ Copied!";
+  setTimeout(() => btn.textContent = "Copy to Clipboard", 2000);
+}
+
+async function submitApply() {
+  if (!currentJob) return;
+  const btn = document.getElementById("apply-btn");
+  const btnText = document.getElementById("apply-btn-text");
+  btnText.innerHTML = `<span class="spinner"></span>`;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resume_id: selectedResumeId,
+        job_id: currentJob.job_id,
+        company: currentJob.company,
+        role: currentJob.role,
+        url: currentJob.url,
+        source: currentJob.source,
+        ats: currentJob.ats,
+        ats_job_id: currentJob.ats_job_id,
+        ats_slug: currentJob.ats_slug,
+      })
+    }).then(r => r.json());
+
+    if (res.success) {
+      toast(`✅ Applied to ${currentJob.company}!`);
+    } else {
+      // Log it anyway, open manually
+      toast("📝 Logged — opening application link");
+      window.open(currentJob.url, "_blank");
+    }
+    closeModal("apply-modal");
+    loadTracker();
+  } catch(e) {
+    toast("Error — try again");
+  }
+  btnText.textContent = "Apply Now";
+  btn.disabled = false;
+}
+
+// ── Tracker ──────────────────────────────────────────────────────────────────
+async function loadTracker() {
+  try {
+    applications = await fetch(`${API}/api/applications`).then(r => r.json());
+    renderTracker();
+  } catch(e) { console.error(e); }
+}
+
+function renderTracker() {
+  const stats = { applied: 0, oa: 0, interview: 0, offer: 0 };
+  applications.forEach(a => { if (stats[a.status] !== undefined) stats[a.status]++; });
+
+  document.getElementById("tracker-stats").innerHTML = `
+    <div class="stat-box"><div class="stat-num">${applications.length}</div><div class="stat-label">Total</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--yellow)">${stats.oa}</div><div class="stat-label">OA</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${stats.interview}</div><div class="stat-label">Interview</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.offer}</div><div class="stat-label">Offer</div></div>
+  `;
+
+  const filtered = trackerFilter === "all" ? applications : applications.filter(a => a.status === trackerFilter);
+  const el = document.getElementById("tracker-list");
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div>No applications yet.<br>Tap a job to apply!</div></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(a => `
+    <div class="card">
+      <div class="flex" style="justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div class="card-company">${a.company}</div>
+          <div class="card-role">${a.role}</div>
+          <div class="card-meta">${timeAgo(a.created_at)}</div>
+        </div>
+        <span class="tag tag-${a.status}" style="cursor:pointer" onclick="openStatusModal('${a.id}', '${a.status}')">${a.status.toUpperCase()}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+document.querySelectorAll("#tracker-chips .chip").forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll("#tracker-chips .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    trackerFilter = chip.dataset.filter;
+    renderTracker();
+  };
+});
+
+let statusAppId = null;
+function openStatusModal(appId, current) {
+  statusAppId = appId;
+  const statuses = ["applied", "oa", "interview", "offer", "rejected"];
+  document.getElementById("status-options").innerHTML = statuses.map(s => `
+    <button class="btn ${s === current ? 'btn-green' : 'btn-dim'}" style="margin-bottom:8px" onclick="setStatus('${s}')">
+      ${s.toUpperCase()}
+    </button>
+  `).join("");
+  document.getElementById("status-modal").classList.add("open");
+}
+
+async function setStatus(status) {
+  await fetch(`${API}/api/applications/${statusAppId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status })
+  });
+  closeModal("status-modal");
+  loadTracker();
+  toast(`Updated to ${status.toUpperCase()}`);
+}
+
+// ── Resumes ──────────────────────────────────────────────────────────────────
+async function loadResumes() {
+  try {
+    resumes = await fetch(`${API}/api/resumes`).then(r => r.json());
+    renderResumes();
+  } catch(e) { console.error(e); }
+}
+
+function renderResumes() {
+  const el = document.getElementById("resume-list");
+  if (!resumes.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📄</div><div>No resumes yet.<br>Upload your first one above.</div></div>`;
+    return;
+  }
+  el.innerHTML = resumes.map(r => `
+    <div class="card">
+      <div class="flex" style="justify-content:space-between">
+        <div>
+          <div style="font-weight:700">${r.name}</div>
+          <div style="color:var(--muted);font-size:12px">${r.content?.length || 0} chars</div>
+        </div>
+        <button class="btn btn-red btn-sm" onclick="deleteResume('${r.id}')">Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+document.getElementById("resume-file-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const name = document.getElementById("resume-name-input").value || file.name.replace(/\.\w+$/, "");
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("name", name);
+
+  toast("Uploading...");
+  try {
+    const res = await fetch(`${API}/api/resumes`, { method: "POST", body: fd }).then(r => r.json());
+    toast(`✅ "${name}" uploaded`);
+    document.getElementById("resume-name-input").value = "";
+    loadResumes();
+  } catch(e) { toast("Upload failed"); }
+  e.target.value = "";
+});
+
+async function deleteResume(id) {
+  if (!confirm("Delete this resume?")) return;
+  await fetch(`${API}/api/resumes/${id}`, { method: "DELETE" });
+  toast("Deleted");
+  loadResumes();
+}
+
+// ── Push notifications ───────────────────────────────────────────────────────
+async function setupPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    document.getElementById("push-status").innerHTML = "⚠️ Push not supported in this browser. Use Safari on iOS.";
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.register("/static/sw.js");
+  const keyRes = await fetch(`${API}/api/push/vapid-public-key`).then(r => r.json());
+  const key = urlBase64ToUint8Array(keyRes.key);
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") { toast("Push permission denied"); return; }
+
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  await fetch(`${API}/api/push/subscribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sub)
+  });
+
+  document.getElementById("push-status").innerHTML = "✅ Push notifications enabled! You'll get pinged instantly when jobs drop.";
+  toast("✅ Push notifications on");
+}
+
+document.getElementById("btn-push").onclick = setupPush;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+// ── Modals ───────────────────────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+document.querySelectorAll(".modal-overlay").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+});
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+
+function sourceLabel(j) {
+  if (j.ats === "greenhouse") return "Greenhouse";
+  if (j.ats === "lever") return "Lever";
+  if (j.source === "github") return "GitHub";
+  if (j.source === "linkedin") return "LinkedIn";
+  return j.source || "?";
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/sw.js");
+}
+loadFeed();
+loadResumes();
+</script>
+</body>
+</html>
