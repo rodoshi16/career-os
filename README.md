@@ -1,4 +1,4 @@
-# InternshipRadar 🎯
+# InternshipRadar
 
 Monitors GitHub repos + company career pages + LinkedIn. Pings you instantly. One-click apply for Greenhouse/Lever. Auto-tracker. Mobile PWA.
 
@@ -105,8 +105,3 @@ frontend/
 
 supabase_schema.sql            # Run once in Supabase SQL editor
 ```
-
-## Cost
-- Railway: $5/mo
-- Anthropic: ~$1-2/mo (only when you use tailoring)
-- Everything else: free
