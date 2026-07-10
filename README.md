@@ -2,8 +2,6 @@
 
 Monitors GitHub repos + company career pages + LinkedIn. Pings you instantly. One-click apply for Greenhouse/Lever. Auto-tracker. Mobile PWA.
 
----
-
 ## Setup (do this once, ~45 min total)
 
 ### Step 1 — Supabase (5 min)
@@ -67,8 +65,6 @@ Copy your Railway URL (e.g. `https://radar-production.up.railway.app`)
 
 Done. You'll get push notifications + emails the second anything drops.
 
----
-
 ## How to find ATS slugs
 
 **Greenhouse:** Go to the company's jobs page. URL will be like `boards.greenhouse.io/apple` → slug is `apple`
@@ -77,7 +73,6 @@ Done. You'll get push notifications + emails the second anything drops.
 
 If a company uses Workday (Google, Microsoft, Amazon etc.) — the watcher can't auto-apply but you'll still get notified and can tap to open it.
 
----
 
 ## File structure
 ```
