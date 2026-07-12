@@ -11,4 +11,5 @@ pdfplumber==0.11.4
 pywebpush==2.0.0
 linkedin-api==2.1.1
 aiosmtplib==3.0.1
+beautifulsoup4==4.12.3
 email-validator==2.2.0

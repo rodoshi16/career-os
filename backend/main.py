@@ -10,6 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from watchers.github_watcher import GitHubWatcher
 from watchers.careers_watcher import CareersWatcher
 from watchers.linkedin_watcher import LinkedInWatcher
+from watchers.scraper_watcher import ScraperWatcher
 from api.routes import router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
@@ -21,19 +22,22 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     log.info("🚀 InternshipRadar starting...")
 
-    github  = GitHubWatcher()
-    careers = CareersWatcher()
+    github   = GitHubWatcher()
+    careers  = CareersWatcher()
     linkedin = LinkedInWatcher()
+    scraper  = ScraperWatcher()
 
     scheduler.add_job(github.check,   "interval", minutes=5,  id="github",   max_instances=1)
     scheduler.add_job(careers.check,  "interval", minutes=5,  id="careers",  max_instances=1)
+    scheduler.add_job(scraper.check,  "interval", minutes=15, id="scraper",  max_instances=1)
     scheduler.add_job(linkedin.check, "interval", minutes=30, id="linkedin", max_instances=1)
 
     scheduler.start()
 
-    # Run immediately on startup so you don't wait 5 min
+    # Run immediately on startup so you don't wait
     asyncio.create_task(github.check())
     asyncio.create_task(careers.check())
+    asyncio.create_task(scraper.check())
 
     log.info("✅ All watchers running")
     yield

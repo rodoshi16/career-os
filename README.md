@@ -1,4 +1,4 @@
-# InternshipRadar 🎯
+# InternshipRadar
 
 Monitors GitHub repos + company career pages + LinkedIn. Pings you instantly. One-click apply for Greenhouse/Lever. Auto-tracker. Mobile PWA.
 

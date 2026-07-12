@@ -26,19 +26,21 @@ class Settings(BaseSettings):
     linkedin_email: Optional[str] = None
     linkedin_password: Optional[str] = None
 
-    # Your watchlist — edit freely
+    # Your watchlist — used for LinkedIn + scraper matching
     target_companies: list[str] = [
-        "Apple", "OpenAI", "Roblox", "Stripe", "Figma",
-        "Notion", "Anthropic", "Coinbase", "Airbnb", "Scale AI"
+        "Apple", "OpenAI", "Roblox", "Jane Street", "Citadel",
+        "Tesla", "Snowflake", "Shopify", "SpaceX", "Stripe",
+        "Notion", "Anthropic", "Coinbase", "Airbnb",
+        "Microsoft", "Netflix", "Meta", "Google",
     ]
 
     github_repos: list[str] = [
-        "SimplifyJobs/Summer2025-Internships",
-        "SimplifyJobs/New-Grad-Positions",
+        "SimplifyJobs/Summer2026-Internships",
+        "speedyapply/2027-SWE-College-Jobs",
     ]
 
-    # Greenhouse slugs for your target companies
-    # Find at: boards.greenhouse.io/{slug}
+    # Greenhouse — these ARE the company career pages, just powered by Greenhouse
+    # e.g. boards.greenhouse.io/openai = OpenAI's actual careers page
     greenhouse_companies: list[dict] = [
         {"name": "OpenAI",    "slug": "openai"},
         {"name": "Roblox",    "slug": "roblox"},
@@ -47,19 +49,66 @@ class Settings(BaseSettings):
         {"name": "Anthropic", "slug": "anthropic"},
         {"name": "Coinbase",  "slug": "coinbase"},
         {"name": "Airbnb",    "slug": "airbnb"},
+        {"name": "Snowflake", "slug": "snowflake"},
+        {"name": "Shopify",   "slug": "shopify"},
+        {"name": "Netflix",   "slug": "netflix"},
     ]
 
-    # Lever slugs for your target companies
-    # Find at: jobs.lever.co/{slug}
+    # Lever — same idea, jobs.lever.co/stripe = Stripe's actual careers page
     lever_companies: list[dict] = [
         {"name": "Scale AI", "slug": "scaleai"},
         {"name": "Vercel",   "slug": "vercel"},
         {"name": "Stripe",   "slug": "stripe"},
     ]
 
+    # Companies with custom career pages (Apple, Google, Meta etc.)
+    # Scraped directly — handled by scraper_watcher.py
+    scrape_targets: list[dict] = [
+        {
+            "name": "Apple",
+            "url": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTNS",
+            "selector": ".table-col-1",
+        },
+        {
+            "name": "Google",
+            "url": "https://careers.google.com/jobs/results/?employment_type=INTERN&q=software+engineer",
+            "selector": ".gc-card__title",
+        },
+        {
+            "name": "Meta",
+            "url": "https://www.metacareers.com/jobs?roles[0]=intern",
+            "selector": "._8sel",
+        },
+        {
+            "name": "Microsoft",
+            "url": "https://jobs.careers.microsoft.com/global/en/search?q=software+intern&l=en_us&pg=1&pgSz=20",
+            "selector": ".ms-List-cell",
+        },
+        {
+            "name": "Tesla",
+            "url": "https://www.tesla.com/en_US/careers/search#/?keyword=intern&department=engineering",
+            "selector": ".result-title",
+        },
+        {
+            "name": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/open-roles/?type=internship",
+            "selector": ".open-role-title",
+        },
+        {
+            "name": "Citadel",
+            "url": "https://www.citadel.com/careers/open-opportunities/students/internships/",
+            "selector": ".position-title",
+        },
+        {
+            "name": "SpaceX",
+            "url": "https://www.spacex.com/careers/jobs/?type=internship",
+            "selector": ".career-title",
+        },
+    ]
+
     intern_keywords: list[str] = [
         "intern", "internship", "co-op", "coop",
-        "new grad", "university", "student", "2026", "2027"
+        "university", "student", "2026", "2027", "summer", "winter"
     ]
 
     swe_keywords: list[str] = [

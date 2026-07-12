@@ -11,17 +11,17 @@ log = logging.getLogger("apply")
 
 # Your personal info — fill these in
 APPLICANT = {
-    "first_name": "Your",
-    "last_name": "Name",
-    "email": "you@email.com",
-    "phone": "+1234567890",
-    "linkedin": "https://linkedin.com/in/yourprofile",
-    "github": "https://github.com/yourusername",
-    "website": "",
-    "grad_year": "2026",
-    "school": "Your University",
+    "first_name": "Rodoshi",
+    "last_name": "Mondal",
+    "email": "rodoshi.mondal@mail.utoronto.ca",
+    "phone": "+1 4373280854",
+    "linkedin": "https://www.linkedin.com/in/rodoshi-mondal/",
+    "github": "https://github.com/rodoshi16",
+    "website": "https://personal-website-iota-five-66.vercel.app/",
+    "grad_year": "2028",
+    "school": "University of Toronto",
     "degree": "Bachelor of Science",
-    "major": "Computer Science",
+    "major": "Computer Science specialist",
 }
 
 async def apply_greenhouse(job_id: str, slug: str, resume_content: str) -> dict:
